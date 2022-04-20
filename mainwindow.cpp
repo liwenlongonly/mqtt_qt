@@ -12,23 +12,29 @@ MainWindow::MainWindow(QWidget *parent):
 QMainWindow(parent),
 isConnected_{false},
 isSubscribe_(false){
-    this->resize(800, 400);
+    this->setMinimumSize(800, 400);
     this->setWindowTitle("MQTT");
 
-    connetBtn = new QPushButton(this);
-    connetBtn->setGeometry(350, 0, 100, 40);
-    connetBtn->setText("connect");
+    connetBtn = new QPushButton("connect", this);
+    connetBtn->setMinimumSize(100, 40);
+    connetBtn->setMaximumWidth(100);
+
     connect(connetBtn, SIGNAL(clicked()), this, SLOT(connetButtonClicked()));
     connect(this, SIGNAL(recvMsg(QString)), this, SLOT(changeTextEdit(QString)));
 
-    mainWidget = new  QWidget(this);
-    mainWidget->setGeometry(0, 40, 800, 360);
+    mainWidget = new  QWidget();
+
+    this->setCentralWidget(mainWidget);
 
     QGridLayout *gridLayout = new QGridLayout();
 
     publishBtn = new QPushButton("publish");
+    publishBtn->setMinimumSize(100, 35);
+    publishBtn->setMaximumWidth(100);
     connect(publishBtn, SIGNAL(clicked()), this, SLOT(publishBtnClicked()));
     publishLineText = new QLineEdit();
+    publishLineText->setMaximumHeight(30);
+    publishLineText->setText("ilong/send/xxl");
 
     QBoxLayout *boxLayout = new QVBoxLayout();
     boxLayout->addWidget(publishLineText);
@@ -43,8 +49,12 @@ isSubscribe_(false){
     gridLayout->addWidget(publishTextEdit, 0, 1);
 
     subscribeBtn = new QPushButton("subscribe");
+    subscribeBtn->setMinimumSize(100, 35);
+    subscribeBtn->setMaximumWidth(100);
     connect(subscribeBtn, SIGNAL(clicked()), this, SLOT(subscribeBtnClicked()));
     subscribeLineText = new QLineEdit();
+    subscribeLineText->setText("ilong/recv/fff");
+    subscribeLineText->setMaximumHeight(30);
 
     QBoxLayout *boxLayout1 = new QVBoxLayout();
     boxLayout1->addWidget(subscribeLineText);
@@ -61,7 +71,13 @@ isSubscribe_(false){
     gridLayout->setColumnStretch(0, 2);
     gridLayout->setColumnStretch(1, 3);
 
-    mainWidget->setLayout(gridLayout);
+
+    QBoxLayout *mainLayout = new QVBoxLayout();
+
+    mainLayout->addWidget(connetBtn, 5, Qt::AlignHCenter);
+    mainLayout->addLayout(gridLayout);
+
+    mainWidget->setLayout(mainLayout);
 
     mqttClientWrapper_ = std::make_shared<MQTTClientWrapper>();
 
@@ -76,7 +92,10 @@ void MainWindow::onDisconnect(std::string &cause){
 }
 
 void MainWindow::onRecvMsg(MQTTClient_message *message){
-    std::string msg((char *)message->payload);
+    std::string msg = "";
+    if(message->payloadlen>0){
+        msg = std::string((char *)message->payload);
+    }
     QString payload = QString::fromStdString(msg);
     emit recvMsg(payload);
 }
