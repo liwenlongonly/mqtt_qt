@@ -8,6 +8,18 @@
 #include <QThread>
 #include <QMessageBox>
 
+static void showMessageBox(QString title, QString msg){
+    QMessageBox *msgBox;
+    msgBox = new QMessageBox(title,		///--这里是设置消息框标题
+                             msg,						///--这里是设置消息框显示的内容
+                             QMessageBox::Warning,							///--这里是在消息框显示的图标
+                             QMessageBox::Cancel | QMessageBox::Default,		///---这里是显示消息框上的按钮情况
+                             QMessageBox::NoButton,	///---这里与 键盘上的 escape 键结合。当用户按下该键，消息框将执行cancel按钮事件
+                             QMessageBox::NoButton);														///---这里是 定义第三个按钮， 该例子 只是 了显示2个按钮
+
+    msgBox->show();
+}
+
 MainWindow::MainWindow(QWidget *parent):
 QMainWindow(parent),
 isConnected_{false},
@@ -113,10 +125,18 @@ void MainWindow::connetButtonClicked() {
     if(mqttClientWrapper_){
         mqttClientWrapper_->setObserver(shared_from_this());
         if(isConnected_){
-            mqttClientWrapper_->disconnect(1000);
+            int ret = mqttClientWrapper_->disconnect(1000);
+            if(ret == EXIT_FAILURE){
+                showMessageBox("警告", "断开了连接失败！");
+                return;
+            }
             connetBtn->setText("connect");
         } else{
-            mqttClientWrapper_->connect();
+            int ret = mqttClientWrapper_->connect();
+            if(ret == EXIT_FAILURE){
+                showMessageBox("警告", "连接失败！");
+                return;
+            }
             connetBtn->setText("disconnect");
         }
         isConnected_ = !isConnected_;
@@ -125,15 +145,7 @@ void MainWindow::connetButtonClicked() {
 
 void MainWindow::publishBtnClicked() {
     if(!isConnected_){
-        QMessageBox *msgBox;
-        msgBox = new QMessageBox("title",		///--这里是设置消息框标题
-                                 "请先链接",						///--这里是设置消息框显示的内容
-                                 QMessageBox::Warning,							///--这里是在消息框显示的图标
-                                 QMessageBox::Cancel | QMessageBox::Default,		///---这里是显示消息框上的按钮情况
-                                 QMessageBox::NoButton,	///---这里与 键盘上的 escape 键结合。当用户按下该键，消息框将执行cancel按钮事件
-                                 QMessageBox::NoButton);														///---这里是 定义第三个按钮， 该例子 只是 了显示2个按钮
-
-        msgBox->show();
+        showMessageBox("警告", "请先链接");
         return;
     }
     Log(DEBUG, "MainWindow::publishBtnClicked()");
@@ -148,15 +160,7 @@ void MainWindow::publishBtnClicked() {
 
 void MainWindow::subscribeBtnClicked() {
     if(!isConnected_){
-        QMessageBox *msgBox;
-        msgBox = new QMessageBox("title",		///--这里是设置消息框标题
-                                 "请先链接",						///--这里是设置消息框显示的内容
-                                 QMessageBox::Critical,							///--这里是在消息框显示的图标
-                                 QMessageBox::Cancel | QMessageBox::Default,		///---这里是显示消息框上的按钮情况
-                                 QMessageBox::NoButton,	///---这里与 键盘上的 escape 键结合。当用户按下该键，消息框将执行cancel按钮事件
-                                 QMessageBox::NoButton);														///---这里是 定义第三个按钮， 该例子 只是 了显示2个按钮
-
-        msgBox->show();
+        showMessageBox("警告", "请先链接");
         return;
     }
     Log(DEBUG, "MainWindow::subscribeBtnClicked()");
@@ -164,10 +168,18 @@ void MainWindow::subscribeBtnClicked() {
         QString topic = subscribeLineText->text();
         std::string topicStr = topic.toStdString();
         if(!isSubscribe_){
-            mqttClientWrapper_->subscribe(topicStr, 1);
+            int ret = mqttClientWrapper_->subscribe(topicStr, 1);
+            if(ret == EXIT_FAILURE){
+                showMessageBox("警告", "订阅失败！");
+                return;
+            }
             subscribeBtn->setText("unSubscribe");
         } else{
-            mqttClientWrapper_->unSubscribe(topicStr);
+            int ret = mqttClientWrapper_->unSubscribe(topicStr);
+            if(ret == EXIT_FAILURE){
+                showMessageBox("警告", "取消订阅失败！");
+                return;
+            }
             subscribeBtn->setText("subscribe");
         }
         isSubscribe_ = !isSubscribe_;
